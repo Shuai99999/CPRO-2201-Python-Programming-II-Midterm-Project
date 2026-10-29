@@ -67,6 +67,14 @@ class Equipment:
             print("Quantity cannot be negative")
             return
 
+        borrowed = con.execute(
+            "SELECT COALESCE(SUM(loan_quantity), 0) FROM loans "
+            "WHERE equipment_id = ? AND return_date IS NULL", (equipment_id,)
+        ).fetchone()[0]
+        if total_quantity < borrowed:
+            print(f"Quantity cannot be less than the {borrowed} units currently on loan")
+            return
+
         cur = con.execute(
             """UPDATE equipment
                SET name = ?, category = ?, total_quantity = ?
@@ -82,6 +90,9 @@ class Equipment:
 
 
     def remove_equipment(self, con, equipment_id):
+        if con.execute("SELECT 1 FROM loans WHERE equipment_id = ?", (equipment_id,)).fetchone():
+            print("Cannot remove equipment with loan history; its records must be preserved")
+            return
         cur = con.execute(
             "DELETE FROM equipment WHERE equipment_id = ?",
             (equipment_id,)

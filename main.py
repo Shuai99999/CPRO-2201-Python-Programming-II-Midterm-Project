@@ -1,3 +1,5 @@
+import sqlite3
+
 
 from elms.database import get_connection, initialize_database
 from elms.member import Member
@@ -5,17 +7,26 @@ from elms.equipment import Equipment
 from elms.loan import Loan
 from elms.reports import Reports
 
-def get_integer(prompt):
+def get_integer(prompt, minimum=1):
     while True:
         try:
-            return int(input(prompt))
+            value = int(input(prompt))
+            if value < minimum:
+                print(f"Please enter a whole number of at least {minimum}.")
+                continue
+            return value
         except ValueError:
             print("Invalid input. Please enter a whole number.")
 
-def main():
-    initialize_database()
-    con = get_connection()
+def get_text(prompt):
+    while True:
+        value = input(prompt).strip()
+        if value:
+            return value
+        print("This field cannot be empty.")
 
+
+def run_menu(con):
     while True:
         print("\n===== Equipment Lending Management System =====")
         print("1. Equipment Management")
@@ -40,9 +51,9 @@ def main():
                 equipment_choice = input("Enter your choice: ")
 
                 if equipment_choice == "1":
-                   name = input("Enter equipment name: ")
-                   category = input("Enter equipment category: ")
-                   quantity = get_integer("Enter total quantity: ")
+                   name = get_text("Enter equipment name: ")
+                   category = get_text("Enter equipment category: ")
+                   quantity = get_integer("Enter total quantity: ", minimum=0)
 
                    equipment = Equipment(name, category, quantity)
                    equipment.add_equipment(con)
@@ -59,9 +70,9 @@ def main():
 
                 elif equipment_choice == "4":
                      equipment_id = get_integer("Enter equipment ID: ")
-                     name = input("Enter new equipment name: ")
-                     category = input("Enter new category: ")
-                     quantity = get_integer("Enter new total quantity: ")
+                     name = get_text("Enter new equipment name: ")
+                     category = get_text("Enter new category: ")
+                     quantity = get_integer("Enter new total quantity: ", minimum=0)
 
                      equipment = Equipment("", "", 0)
                      equipment.update_equipment(
@@ -94,8 +105,8 @@ def main():
                 member_choice = input("Enter your choice: ")
 
                 if member_choice == "1":
-                   name = input("Enter member name: ")
-                   contact = input("Enter member contact: ")
+                   name = get_text("Enter member name: ")
+                   contact = get_text("Enter member contact: ")
 
                    member = Member(name, contact)
                    member.add_member(con)
@@ -114,8 +125,8 @@ def main():
 
                 elif member_choice == "4":
                      member_id = get_integer("Enter member ID: ")
-                     name = input("Enter new member name: ")
-                     contact = input("Enter new member contact: ")
+                     name = get_text("Enter new member name: ")
+                     contact = get_text("Enter new member contact: ")
 
                      member = Member("", "")
                      member.update_member(con, member_id, name, contact)
@@ -206,7 +217,29 @@ def main():
         else:
             print("Invalid choice. Please try again.")
 
-    con.close()
+def main():
+    """Keep resources closed even when input ends or a database action fails."""
+    con = None
+    try:
+        initialize_database()
+        con = get_connection()
+        while True:
+            try:
+                run_menu(con)
+                break
+            except sqlite3.IntegrityError:
+                con.rollback()
+                print("The change conflicts with existing records. No change was saved.")
+            except sqlite3.Error as error:
+                con.rollback()
+                print(f"Database operation failed: {error}. Returning to the main menu.")
+    except (EOFError, KeyboardInterrupt):
+        print("\nGoodbye!")
+    except sqlite3.Error as error:
+        print(f"Unable to open or initialize the database: {error}")
+    finally:
+        if con is not None:
+            con.close()
 
 
 if __name__ == "__main__":
