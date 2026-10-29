@@ -10,6 +10,9 @@ class Loan:
         self.loan_quantity = loan_quantity
 
     def add_loan(self, con):
+        if self.member_id <= 0 or self.equipment_id <= 0:
+            print("Member and equipment IDs must be positive")
+            return
         if self.loan_quantity <= 0:
             print("Loan quantity must be greater than zero")
             return
@@ -66,6 +69,9 @@ class Loan:
 
 
     def return_loan(self, con, loan_id):
+        if loan_id <= 0:
+            print("Loan ID must be positive")
+            return
         cur = con.execute(
             "SELECT return_date FROM loans WHERE loan_id = ?",
             (loan_id,)
@@ -91,6 +97,9 @@ class Loan:
 
 
     def display_member_loans(self, con, member_id):
+        if con.execute("SELECT 1 FROM member WHERE id = ?", (member_id,)).fetchone() is None:
+            print("Member not found")
+            return
         cur = con.execute(
             """SELECT loan_id, member_id, equipment_id,
                       loan_quantity, loan_date

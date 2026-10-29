@@ -18,3 +18,22 @@ class Member:
             print(row["id"], row["name"], row["contact"])
         else:
             print("Member not found")
+
+
+    def display_all_members(self, con):
+        rows = con.execute("SELECT id, name, contact FROM member ORDER BY id").fetchall()
+        if not rows:
+            print("No members found")
+        for row in rows:
+            print(row["id"], row["name"], row["contact"])
+
+    def update_member(self, con, member_id, name, contact):
+        if member_id <= 0 or not name.strip() or not contact.strip():
+            print("A positive member ID, name and contact are required")
+            return
+        with con:
+            cur = con.execute(
+                "UPDATE member SET name = ?, contact = ? WHERE id = ?",
+                (name.strip(), contact.strip(), member_id)
+            )
+        print("Member updated successfully" if cur.rowcount else "Member not found")

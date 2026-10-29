@@ -1,8 +1,11 @@
 import sqlite3
+from pathlib import Path
+
+DATABASE_PATH = Path(__file__).resolve().parent.parent / "elms.db"
 
 
 def get_connection():
-    con = sqlite3.connect("elms.db")
+    con = sqlite3.connect(DATABASE_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     con.row_factory = sqlite3.Row
     return con
